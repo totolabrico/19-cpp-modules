@@ -1,0 +1,294 @@
+#include "AMateria.hpp"
+
+AMateria::AMateria()
+{
+    std::cout << "AMateria default constructor called" << std::endl;
+};
+
+AMateria::AMateria(std::string const &type) : _type(type)
+{
+    std::cout << "AMateria type constructor called" << std::endl;
+};
+
+AMateria::AMateria(AMateria const &src)
+{
+    std::cout << "AMateria copy constructor called" << std::endl;
+    *this = src;
+};
+
+AMateria::~AMateria()
+{
+    std::cout << "AMateria destructor called" << std::endl;
+};
+
+AMateria &AMateria::operator=(AMateria const & src)
+{
+    std::cout << "AMateria copy assignment operator called" << std::endl;
+    if(this != &src)
+        _type = src.getType();
+    return *this;
+}
+
+std::string const & AMateria::getType() const
+{
+    return _type;
+}
+
+void AMateria::setType(std::string type)
+{
+    _type = type;
+}
+
+void AMateria::use(ICharacter& target)
+{
+    std::cout << getType() << ": * AMateria use "
+    << target.getName() << " *" << std::endl;
+}
+#ifndef AMATERIA_HPP
+#define AMATERIA_HPP
+#include <iostream>
+#include "ICharacter.hpp"
+
+class AMateria
+{
+protected:
+    std::string _type;
+public:
+    AMateria();
+    AMateria(std::string const & type);
+    AMateria(AMateria const &src);
+    virtual ~AMateria();
+
+    AMateria &operator=(AMateria const & rhs);
+
+    std::string const & getType() const;
+    void setType(std::string);
+    virtual AMateria* clone() const = 0;
+    virtual void use(ICharacter& target);
+};
+
+#endif#include "Character.hpp"
+
+Character::Character()
+{
+    std::cout << "Character default constructor called" << std::endl;
+};
+
+Character::Character(std::string const &name) : _name(name)
+{
+    for (int i = 0 ; i < 4; i++)
+        _inventory[i] = NULL;
+    std::cout << "Character type constructor called" << std::endl;
+};
+
+Character::Character(Character const &src)
+{
+    std::cout << "Character copy constructor called" << std::endl;
+    *this = src;
+};
+
+Character::~Character()
+{
+    std::cout << "Character destructor called" << std::endl;
+};
+
+Character &Character::operator=(Character const & src)
+{
+    std::cout << "Character copy assignment operator called" << std::endl;
+    if(this != &src)
+        _name = src.getName();
+    for (int i = 0 ; i < 4; i++)
+    {
+        if (_inventory[i] != NULL)
+            delete _inventory[i];
+        _inventory[i] = src._inventory[i]->clone();
+    }
+    return *this;
+}
+
+void Character::equip(AMateria *m)
+{
+    for (int i = 0; i < 4; i++)
+    {
+        if(_inventory[i] == NULL)
+        {
+            _inventory[i] = m->clone();
+            std::cout << "Character: " << _name
+            << "equip " << _inventory[i]->getType()
+            << " at index " << i << " in inventory"
+            << std::endl;
+            return;
+        }
+    }
+    std::cout << "Character: " << _name
+    << "Inventory is full!" << std::endl;
+}
+
+void Character::unequip(int idx)
+{
+    if (idx < 0 || idx >= 4)
+        return;
+    _inventory[idx] = NULL;
+    std::cout << "Character :" << _name
+    << "unequip inventory at index " << idx
+    << std::endl;
+}
+
+void Character::use(int idx, ICharacter& target)
+{
+    if (idx < 0 || idx >= 4)
+        return;
+    if(_inventory[idx])
+        _inventory[idx]->use(target);
+}
+#ifndef CHARACTER_HPP
+#define CHARACTER_HPP
+#include <iostream>
+#include "AMateria.hpp"
+#include "ICharacter.hpp"
+
+class Character : public ICharacter
+{
+private:
+    AMateria *_inventory[4];
+    std::string _name;
+public:
+    Character();
+    Character(std::string const & name);
+    Character(Character const &src);
+    virtual ~Character();
+
+    Character &operator=(Character const & rhs);
+    virtual std::string const & getName() const;
+    virtual void equip(AMateria* m);
+    virtual void unequip(int idx);
+    virtual void use(int idx, ICharacter& target);
+};
+
+#endif#include "Ice.hpp"
+
+Ice::Ice() : AMateria("ice")
+{
+    std::cout << "Ice default constructor called" << std::endl;
+};
+
+Ice::Ice(AMateria const &src)
+{
+    std::cout << "Ice copy constructor called" << std::endl;
+    *this = src;
+};
+
+Ice::~Ice()
+{
+    std::cout << "Ice destructor called" << std::endl;
+};
+
+Ice &Ice::operator=(Ice const & src)
+{
+    std::cout << "Ice copy assignment operator called" << std::endl;
+    if(this != &src)
+        _type = src.getType();
+    return *this;
+}
+
+void Ice::setType()
+{
+    AMateria::setType("ice");
+}
+
+AMateria *Ice::clone()const
+{
+    return(new Ice());
+}
+
+void Ice::use(ICharacter& target)
+{
+    std::cout << getType() << ": * shoots an ice bolt at"
+    << target.getName() << " *" << std::endl;
+}
+#ifndef ICE_HPP
+#define ICE_HPP
+#include <iostream>
+#include "AMateria.hpp"
+#include "ICharacter.hpp"
+
+class Ice : public AMateria
+{
+protected:
+    std::string _type;
+public:
+    Ice();
+    Ice(AMateria const &src);
+    virtual ~Ice();
+
+    Ice &operator=(Ice const & rhs);
+
+    void setType();
+    virtual AMateria* clone()const;
+    virtual void use(ICharacter& target);
+};
+
+#endif#ifndef ICHARACTER_HPP
+#define ICHARACTER_HPP
+#include <iostream>
+#include "AMateria.hpp"
+
+class ICharacter
+{
+    public:
+        virtual ~ICharacter() {}
+        virtual std::string const & getName() const = 0;
+        virtual void equip(AMateria* m) = 0;
+        virtual void unequip(int idx) = 0;
+        virtual void use(int idx, ICharacter& target) = 0;
+};
+
+#endif#include <iostream>
+#include "AMateria.hpp"
+#include "ICharacter.hpp"
+#include "Character.hpp"
+#include "Ice.hpp"
+
+int main( void )
+{
+    AMateria *ice = new Ice();
+
+    std::cout << ice->getType() << std::endl;
+
+    delete ice;
+    return 0;
+}# **************************************************************************** #
+#                                                                              #
+#                                                         :::      ::::::::    #
+#    Makefile                                           :+:      :+:    :+:    #
+#                                                     +:+ +:+         +:+      #
+#    By: tbarbe <marvin@42.fr>                      +#+  +:+       +#+         #
+#                                                 +#+#+#+#+#+   +#+            #
+#    Created: 2022/10/07 15:33:53 by tbarbe            #+#    #+#              #
+#    Updated: 2024/02/15 14:39:47 by tbarbe           ###   ########.fr        #
+#                                                                              #
+# **************************************************************************** #
+
+NAME	=	ex03
+
+SRCS	=	*.cpp
+
+CC		=	c++
+
+RM		=	rm -f
+
+CFLAGS	=	-Wall -Wextra -Werror -std=c++98
+
+all:		${NAME}			
+
+${NAME}:	
+			${CC} ${SRCS} -o ${NAME} ${CFLAGS}
+
+clean:
+			
+fclean: 	clean
+			${RM} $(NAME)
+
+re:			fclean all
+
+.PHONY:		all clean fclean re
